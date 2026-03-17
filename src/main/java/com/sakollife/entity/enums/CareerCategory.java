@@ -1,0 +1,13 @@
+package com.sakollife.entity.enums;
+
+public enum CareerCategory {
+    SOFTWARE_ENGINEERING,
+    ARTIFICIAL_INTELLIGENCE,
+    DATA_ANALYTICS,
+    WEB_DEVELOPMENT,
+    CYBERSECURITY,
+    NETWORKING,
+    DIGITAL_DESIGN,
+    DATABASE,
+    INFORMATION_SYSTEMS
+}
