@@ -2,7 +2,7 @@ package com.sakollife.controller.admin;
 
 import com.sakollife.entity.*;
 import com.sakollife.repository.*;
-import com.sakollife.service.StorageService;
+import com.sakollife.service.impl.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
