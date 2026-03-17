@@ -1,5 +1,7 @@
 package com.sakollife.entity;
 
+import com.sakollife.entity.enums.CareerCategory;
+import com.sakollife.entity.enums.JobOutlook;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -11,7 +13,8 @@ import java.util.UUID;
 /**
  * Seeded with the 9 technology majors.
  * RIASEC fields store the major's profile vector (weighted H/M/L values).
- * H = 1.0, M = 0.5, L = 0.1 — set these during seeding.
+ * careerCategory  — used as a filter chip on the results page
+ * jobOutlook      — HIGH / MEDIUM / LOW demand in job market
  */
 @Entity
 @Table(name = "majors")
@@ -41,7 +44,26 @@ public class Major {
     @Column(name = "description_kh", columnDefinition = "TEXT")
     private String descriptionKh;
 
-    // RIASEC vector values for this major
+    // Filter fields
+
+    /**
+     * Career category — maps to a filter chip on the Majors results page.
+     * e.g. SOFTWARE_ENGINEERING, ARTIFICIAL_INTELLIGENCE, DATA_ANALYTICS …
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "career_category", length = 50)
+    private CareerCategory careerCategory;
+
+    /**
+     * Job market demand level for this major.
+     * HIGH / MEDIUM / LOW — shown as a badge on the major card.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "job_outlook", length = 10)
+    private JobOutlook jobOutlook;
+
+    // RIASEC vector
+
     @Column(name = "riasec_r", nullable = false, precision = 4, scale = 2)
     private BigDecimal riasecR;
 

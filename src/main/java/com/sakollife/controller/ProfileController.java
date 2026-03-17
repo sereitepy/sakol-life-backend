@@ -1,5 +1,6 @@
 package com.sakollife.controller;
 
+import com.sakollife.entity.Major;
 import com.sakollife.entity.Profile;
 import com.sakollife.entity.QuizAttempt;
 import com.sakollife.repository.ProfileRepository;
@@ -27,6 +28,10 @@ public class ProfileController {
      * POST /api/v1/profile/init
      *
      * Creates the profile row for a newly registered user.
+     * Called once immediately after Supabase Auth registration.
+     *
+     * Body (optional fields):
+     * { "displayName": "...", "preferredLanguage": "EN" | "KH" }
      */
     @PostMapping("/init")
     public ResponseEntity<?> initProfile(
@@ -52,8 +57,8 @@ public class ProfileController {
 
         profileRepository.save(profile);
         return ResponseEntity.status(201).body(Map.of(
-                "message", "Profile created successfully",
-                "id", userId,
+                "message",     "Profile created successfully",
+                "id",          userId,
                 "displayName", profile.getDisplayName()
         ));
     }
@@ -62,10 +67,10 @@ public class ProfileController {
      * GET /api/v1/profile
      *
      * Returns the authenticated user's full profile including:
-     * - display name, picture, language preference
-     * - total quiz attempt count
-     * - latest quiz answers (for re-populating the quiz review)
-     * - currently selected major (null if none — determines University tab availability)
+     *  - display name, picture, language preference, role
+     *  - totalAttempts
+     *  - selectedMajor
+     *  - latestAnswers
      */
     @GetMapping
     public ResponseEntity<?> getProfile(Authentication authentication) {
@@ -76,6 +81,8 @@ public class ProfileController {
 
         long attemptCount = quizService.getAttemptCount(userId);
 
+        // Only populated if the user has submitted the quiz while authenticated.
+        // Guest-only submissions (no profile) will show an empty list until they register and call POST /api/v1/quiz/merge-guest-attempt.
         Optional<QuizAttempt> latestAttempt = quizAttemptRepository.findLatestByUserId(userId);
         List<Map<String, String>> latestAnswers = latestAttempt
                 .map(attempt -> quizAnswerRepository
@@ -87,28 +94,21 @@ public class ProfileController {
                         .toList())
                 .orElse(Collections.emptyList());
 
-        // Build selected major block . null-safe
-        Map<String, Object> selectedMajorBlock = null;
-        if (profile.getSelectedMajor() != null) {
-            var m = profile.getSelectedMajor();
-            selectedMajorBlock = new LinkedHashMap<>();
-            selectedMajorBlock.put("majorId",       m.getId());
-            selectedMajorBlock.put("code",          m.getCode());
-            selectedMajorBlock.put("nameEn",        m.getNameEn());
-            selectedMajorBlock.put("nameKh",        m.getNameKh());
-            selectedMajorBlock.put("descriptionEn", m.getDescriptionEn());
-            selectedMajorBlock.put("descriptionKh", m.getDescriptionKh());
-        }
+        // selectedMajor
+        // Reflects Profile.selectedMajor which is set by PUT /api/v1/selected-major.
+        Map<String, Object> selectedMajorBlock = buildSelectedMajorBlock(profile.getSelectedMajor());
 
+        // Build response
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("id",                 profile.getId());
-        response.put("displayName",        profile.getDisplayName());
-        response.put("profilePictureUrl",  profile.getProfilePictureUrl() != null ? profile.getProfilePictureUrl() : "");
-        response.put("preferredLanguage",  profile.getPreferredLanguage());
-        response.put("role",               profile.getRole());
-        response.put("totalAttempts",      attemptCount);
-        response.put("selectedMajor",      selectedMajorBlock);   // null = university tab disabled
-        response.put("latestAnswers",       latestAnswers);
+        response.put("id",                profile.getId());
+        response.put("displayName",       profile.getDisplayName());
+        response.put("profilePictureUrl", profile.getProfilePictureUrl() != null
+                ? profile.getProfilePictureUrl() : "");
+        response.put("preferredLanguage", profile.getPreferredLanguage());
+        response.put("role",              profile.getRole());
+        response.put("totalAttempts",     attemptCount);
+        response.put("selectedMajor",     selectedMajorBlock);   // null only if never selected
+        response.put("latestAnswers",      latestAnswers);        // empty only if never submitted while logged in
 
         return ResponseEntity.ok(response);
     }
@@ -116,9 +116,11 @@ public class ProfileController {
     /**
      * PUT /api/v1/profile
      *
-     * Update profile fields.
-     * Note: selectedMajor is NOT updated here.
-     * Use PUT /api/v1/selected-major and DELETE /api/v1/selected-major instead.
+     * Update display name, profile picture URL, or preferred language.
+     *
+     * NOTE: selectedMajor is NOT updated here. BRUHHHHH
+     *       Use PUT /api/v1/selected-major  to select a major.
+     *       Use DELETE /api/v1/selected-major to deselect.
      */
     @PutMapping
     public ResponseEntity<?> updateProfile(
@@ -142,5 +144,25 @@ public class ProfileController {
 
         profileRepository.save(profile);
         return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
+    }
+
+    /**
+     * Builds the selectedMajor block for the profile response.
+     * Returns null (not an empty map) when no major is selected,
+     * so the frontend can do a simple null-check to toggle the University tab.
+     */
+    private Map<String, Object> buildSelectedMajorBlock(Major major) {
+        if (major == null) return null;
+
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("majorId",        major.getId());
+        map.put("code",           major.getCode());
+        map.put("nameEn",         major.getNameEn());
+        map.put("nameKh",         major.getNameKh());
+        map.put("descriptionEn",  major.getDescriptionEn());
+        map.put("descriptionKh",  major.getDescriptionKh());
+        map.put("careerCategory", major.getCareerCategory());
+        map.put("jobOutlook",     major.getJobOutlook());
+        return map;
     }
 }
