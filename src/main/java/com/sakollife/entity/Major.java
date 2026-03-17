@@ -1,28 +1,22 @@
 package com.sakollife.entity;
 
 import com.sakollife.entity.enums.CareerCategory;
+import com.sakollife.entity.enums.JobDemandLevel;
 import com.sakollife.entity.enums.JobOutlook;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * Seeded with the 9 technology majors.
- * RIASEC fields store the major's profile vector (weighted H/M/L values).
- * careerCategory  — used as a filter chip on the results page
- * jobOutlook      — HIGH / MEDIUM / LOW demand in job market
- */
 @Entity
 @Table(name = "majors")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Major {
 
     @Id
@@ -30,7 +24,9 @@ public class Major {
     private UUID id;
 
     @Column(nullable = false, unique = true, length = 10)
-    private String code; // CS, AI, DS, MWD, CYB, NET, DD, DB, MIS
+    private String code;
+
+    // ── Display ───────────────────────────────────────────────────────────────
 
     @Column(name = "name_en", nullable = false)
     private String nameEn;
@@ -44,25 +40,47 @@ public class Major {
     @Column(name = "description_kh", columnDefinition = "TEXT")
     private String descriptionKh;
 
-    // Filter fields
+    /** "Faculty of Engineering & Technology" — chip above the major title */
+    @Column(name = "faculty", length = 200)
+    private String faculty;
 
-    /**
-     * Career category — maps to a filter chip on the Majors results page.
-     * e.g. SOFTWARE_ENGINEERING, ARTIFICIAL_INTELLIGENCE, DATA_ANALYTICS …
-     */
+    /** "Bachelor of Science" */
+    @Column(name = "degree_type", length = 100)
+    private String degreeType;
+
+    /** "English / Khmer" */
+    @Column(name = "language", length = 100)
+    private String language;
+
+    /** Small icon shown in Related Majors sidebar and major cards */
+    @Column(name = "icon_url", columnDefinition = "TEXT")
+    private String iconUrl;
+
+    // ── Filter fields ─────────────────────────────────────────────────────────
+
     @Enumerated(EnumType.STRING)
     @Column(name = "career_category", length = 50)
     private CareerCategory careerCategory;
 
-    /**
-     * Job market demand level for this major.
-     * HIGH / MEDIUM / LOW — shown as a badge on the major card.
-     */
     @Enumerated(EnumType.STRING)
     @Column(name = "job_outlook", length = 10)
     private JobOutlook jobOutlook;
 
-    // RIASEC vector
+    // ── Job Market sidebar ────────────────────────────────────────────────────
+
+    /** VERY_HIGH | HIGH | MEDIUM | LOW — drives the demand bar colour */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "job_demand_level", length = 20)
+    private JobDemandLevel jobDemandLevel;
+
+    /** Entry-level salary range, USD/month */
+    @Column(name = "salary_min")
+    private Integer salaryMin;
+
+    @Column(name = "salary_max")
+    private Integer salaryMax;
+
+    // ── RIASEC vector ─────────────────────────────────────────────────────────
 
     @Column(name = "riasec_r", nullable = false, precision = 4, scale = 2)
     private BigDecimal riasecR;
@@ -82,7 +100,33 @@ public class Major {
     @Column(name = "riasec_c", nullable = false, precision = 4, scale = 2)
     private BigDecimal riasecC;
 
+    // ── Child collections (lazy — only loaded in detail endpoint) ─────────────
+
+    @OneToMany(mappedBy = "major", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<MajorSubject> subjects = new ArrayList<>();
+
+    @OneToMany(mappedBy = "major", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<MajorSkill> skills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "major", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<MajorCareerOpportunity> careerOpportunities = new ArrayList<>();
+
+    // ── Timestamps ────────────────────────────────────────────────────────────
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 }

@@ -1,19 +1,39 @@
-package com.sakollife.controller.admin;
+package com.sakollife.controller;
 
-import com.sakollife.entity.Major;
-import com.sakollife.repository.MajorRepository;
-import com.sakollife.repository.QuizResultRepository;
-import com.sakollife.repository.UniversityMajorRepository;
+import com.sakollife.entity.*;
+import com.sakollife.entity.enums.SkillType;
+import com.sakollife.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.UUID;
+import java.util.*;
 
+/**
+ * Admin CRUD for Major detail page content.
+ * All endpoints require ROLE_ADMIN.
+ *
+ * Base: /api/v1/admin/majors
+ *
+ * Subjects:
+ *   POST   /{majorId}/subjects
+ *   PUT    /{majorId}/subjects/{subjectId}
+ *   DELETE /{majorId}/subjects/{subjectId}
+ *
+ * Skills:
+ *   POST   /{majorId}/skills
+ *   PUT    /{majorId}/skills/{skillId}
+ *   DELETE /{majorId}/skills/{skillId}
+ *
+ * Career Opportunities:
+ *   POST   /{majorId}/career-opportunities
+ *   PUT    /{majorId}/career-opportunities/{oppId}
+ *   DELETE /{majorId}/career-opportunities/{oppId}
+ *
+ * Major fields (faculty, degreeType, language, jobDemandLevel, salary, iconUrl):
+ *   PATCH  /{majorId}
+ */
 @RestController
 @RequestMapping("/api/v1/admin/majors")
 @RequiredArgsConstructor
@@ -21,131 +41,195 @@ import java.util.UUID;
 public class AdminMajorController {
 
     private final MajorRepository majorRepository;
-    private final QuizResultRepository quizResultRepository;
-    private final UniversityMajorRepository universityMajorRepository;
+    private final MajorSubjectRepository majorSubjectRepository;
+    private final MajorSkillRepository majorSkillRepository;
+    private final MajorCareerOpportunityRepository majorCareerOpportunityRepository;
+
+    // ── PATCH /{majorId} — update major top-level fields ─────────────────────
 
     /**
-     * GET /api/v1/admin/majors
-     * List all 9 majors with full details including RIASEC vectors.
-     */
-    @GetMapping
-    public ResponseEntity<?> getAllMajors() {
-        return ResponseEntity.ok(majorRepository.findAll());
-    }
-
-    /**
-     * GET /api/v1/admin/majors/{id}
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getMajor(@PathVariable UUID id) {
-        return majorRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    /**
-     * PUT /api/v1/admin/majors/{id}
-     * Update major descriptions (EN/KH) and/or RIASEC vector values.
-     *
-     * Body example (all fields optional — only send what you want to change):
+     * Update top-level major fields.
+     * Body (all optional):
      * {
-     *   "nameEn": "Computer Science",
-     *   "nameKh": "វិទ្យាសាស្ត្រកុំព្យូទ័រ",
-     *   "descriptionEn": "Updated description...",
-     *   "descriptionKh": "...",
-     *   "riasecR": 1.0,
-     *   "riasecI": 1.0,
-     *   "riasecA": 0.1,
-     *   "riasecS": 0.1,
-     *   "riasecE": 0.5,
-     *   "riasecC": 1.0
+     *   "faculty": "Faculty of Engineering & Technology",
+     *   "degreeType": "Bachelor of Science",
+     *   "language": "English / Khmer",
+     *   "iconUrl": "https://...",
+     *   "jobDemandLevel": "VERY_HIGH",
+     *   "salaryMin": 500,
+     *   "salaryMax": 900
      * }
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateMajor(@PathVariable UUID id,
-                                          @RequestBody Map<String, Object> body) {
-        Major major = majorRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Major not found"));
+    @PatchMapping("/{majorId}")
+    public ResponseEntity<?> updateMajor(
+            @PathVariable UUID majorId,
+            @RequestBody Map<String, Object> body) {
 
-        if (body.containsKey("nameEn"))        major.setNameEn((String) body.get("nameEn"));
-        if (body.containsKey("nameKh"))        major.setNameKh((String) body.get("nameKh"));
-        if (body.containsKey("descriptionEn")) major.setDescriptionEn((String) body.get("descriptionEn"));
-        if (body.containsKey("descriptionKh")) major.setDescriptionKh((String) body.get("descriptionKh"));
-        if (body.containsKey("riasecR"))       major.setRiasecR(bd(body, "riasecR"));
-        if (body.containsKey("riasecI"))       major.setRiasecI(bd(body, "riasecI"));
-        if (body.containsKey("riasecA"))       major.setRiasecA(bd(body, "riasecA"));
-        if (body.containsKey("riasecS"))       major.setRiasecS(bd(body, "riasecS"));
-        if (body.containsKey("riasecE"))       major.setRiasecE(bd(body, "riasecE"));
-        if (body.containsKey("riasecC"))       major.setRiasecC(bd(body, "riasecC"));
+        Major major = majorRepository.findById(majorId)
+                .orElseThrow(() -> new NoSuchElementException("Major not found: " + majorId));
 
-        return ResponseEntity.ok(majorRepository.save(major));
+        if (body.containsKey("faculty"))       major.setFaculty((String) body.get("faculty"));
+        if (body.containsKey("degreeType"))    major.setDegreeType((String) body.get("degreeType"));
+        if (body.containsKey("language"))      major.setLanguage((String) body.get("language"));
+        if (body.containsKey("iconUrl"))       major.setIconUrl((String) body.get("iconUrl"));
+        if (body.containsKey("jobDemandLevel"))
+            major.setJobDemandLevel(
+                    com.sakollife.entity.enums.JobDemandLevel.valueOf((String) body.get("jobDemandLevel")));
+        if (body.containsKey("salaryMin"))     major.setSalaryMin((Integer) body.get("salaryMin"));
+        if (body.containsKey("salaryMax"))     major.setSalaryMax((Integer) body.get("salaryMax"));
+
+        majorRepository.save(major);
+        return ResponseEntity.ok(Map.of("message", "Major updated", "majorId", majorId));
     }
 
-    /**
-     * POST /api/v1/admin/majors
-     * Create a new major. Useful when the platform expands beyond 9 majors.
-     * Body example:
-     * {
-     *   "code": "CE",
-     *   "nameEn": "Computer Engineering",
-     *   "nameKh": "វិស្វកម្មកុំព្យូទ័រ",
-     *   "descriptionEn": "Focuses on hardware and software integration...",
-     *   "descriptionKh": "...",
-     *   "riasecR": 1.0,
-     *   "riasecI": 1.0,
-     *   "riasecA": 0.1,
-     *   "riasecS": 0.1,
-     *   "riasecE": 0.5,
-     *   "riasecC": 1.0
-     * }
-     */
-    @PostMapping
-    public ResponseEntity<?> createMajor(@RequestBody Map<String, Object> body) {
-        String code = (String) body.get("code");
-        if (majorRepository.findByCode(code).isPresent()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Major with code '" + code + "' already exists"));
-        }
+    // ── SUBJECTS ──────────────────────────────────────────────────────────────
 
-        Major major = Major.builder()
-                .code(code)
+    /**
+     * POST /{majorId}/subjects
+     * Body: { "nameEn": "...", "nameKh": "...", "descriptionEn": "...",
+     *         "descriptionKh": "...", "iconKey": "code", "displayOrder": 0 }
+     */
+    @PostMapping("/{majorId}/subjects")
+    public ResponseEntity<?> addSubject(
+            @PathVariable UUID majorId,
+            @RequestBody Map<String, Object> body) {
+
+        Major major = majorRepository.getReferenceById(majorId);
+        MajorSubject subject = MajorSubject.builder()
+                .major(major)
                 .nameEn((String) body.get("nameEn"))
                 .nameKh((String) body.get("nameKh"))
-                .descriptionEn((String) body.getOrDefault("descriptionEn", ""))
-                .descriptionKh((String) body.getOrDefault("descriptionKh", ""))
-                .riasecR(bd(body, "riasecR"))
-                .riasecI(bd(body, "riasecI"))
-                .riasecA(bd(body, "riasecA"))
-                .riasecS(bd(body, "riasecS"))
-                .riasecE(bd(body, "riasecE"))
-                .riasecC(bd(body, "riasecC"))
+                .descriptionEn((String) body.get("descriptionEn"))
+                .descriptionKh((String) body.get("descriptionKh"))
+                .iconKey((String) body.get("iconKey"))
+                .displayOrder(body.containsKey("displayOrder") ? (Integer) body.get("displayOrder") : 0)
                 .build();
 
-        return ResponseEntity.ok(majorRepository.save(major));
+        majorSubjectRepository.save(subject);
+        return ResponseEntity.status(201).body(Map.of("id", subject.getId(), "message", "Subject added"));
     }
+
+    @PutMapping("/{majorId}/subjects/{subjectId}")
+    public ResponseEntity<?> updateSubject(
+            @PathVariable UUID majorId,
+            @PathVariable UUID subjectId,
+            @RequestBody Map<String, Object> body) {
+
+        MajorSubject subject = majorSubjectRepository.findById(subjectId)
+                .orElseThrow(() -> new NoSuchElementException("Subject not found"));
+
+        if (body.containsKey("nameEn"))        subject.setNameEn((String) body.get("nameEn"));
+        if (body.containsKey("nameKh"))        subject.setNameKh((String) body.get("nameKh"));
+        if (body.containsKey("descriptionEn")) subject.setDescriptionEn((String) body.get("descriptionEn"));
+        if (body.containsKey("descriptionKh")) subject.setDescriptionKh((String) body.get("descriptionKh"));
+        if (body.containsKey("iconKey"))       subject.setIconKey((String) body.get("iconKey"));
+        if (body.containsKey("displayOrder"))  subject.setDisplayOrder((Integer) body.get("displayOrder"));
+
+        majorSubjectRepository.save(subject);
+        return ResponseEntity.ok(Map.of("message", "Subject updated"));
+    }
+
+    @DeleteMapping("/{majorId}/subjects/{subjectId}")
+    public ResponseEntity<?> deleteSubject(@PathVariable UUID majorId, @PathVariable UUID subjectId) {
+        majorSubjectRepository.deleteById(subjectId);
+        return ResponseEntity.ok(Map.of("message", "Subject deleted"));
+    }
+
+    // ── SKILLS ────────────────────────────────────────────────────────────────
 
     /**
-     * DELETE /api/v1/admin/majors/{id}
-     * Delete a major. Use with caution — this will cascade-delete any quiz_results
-     * referencing this major. Safe to use freely during development.
-     * In production, consider soft-delete by adding an 'active' flag to Major.
+     * POST /{majorId}/skills
+     * Body: { "skillType": "TECHNICAL", "nameEn": "Java / Python / C++",
+     *         "nameKh": "...", "displayOrder": 0 }
      */
-    @DeleteMapping("/{id}")
-    @org.springframework.transaction.annotation.Transactional
-    public ResponseEntity<?> deleteMajor(@PathVariable UUID id) {
-        if (!majorRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        // Must delete in this exact order due to FK constraints
-        universityMajorRepository.deleteByMajorId(id);
-        quizResultRepository.deleteByMajorId(id);
-        majorRepository.deleteById(id);
-        return ResponseEntity.ok(Map.of("message", "Major deleted", "id", id));
+    @PostMapping("/{majorId}/skills")
+    public ResponseEntity<?> addSkill(
+            @PathVariable UUID majorId,
+            @RequestBody Map<String, Object> body) {
+
+        Major major = majorRepository.getReferenceById(majorId);
+        MajorSkill skill = MajorSkill.builder()
+                .major(major)
+                .skillType(SkillType.valueOf((String) body.get("skillType")))
+                .nameEn((String) body.get("nameEn"))
+                .nameKh((String) body.get("nameKh"))
+                .displayOrder(body.containsKey("displayOrder") ? (Integer) body.get("displayOrder") : 0)
+                .build();
+
+        majorSkillRepository.save(skill);
+        return ResponseEntity.status(201).body(Map.of("id", skill.getId(), "message", "Skill added"));
     }
 
-    private BigDecimal bd(Map<String, Object> body, String key) {
-        Object val = body.get(key);
-        if (val == null) return BigDecimal.ZERO;
-        return new BigDecimal(val.toString());
+    @PutMapping("/{majorId}/skills/{skillId}")
+    public ResponseEntity<?> updateSkill(
+            @PathVariable UUID majorId,
+            @PathVariable UUID skillId,
+            @RequestBody Map<String, Object> body) {
+
+        MajorSkill skill = majorSkillRepository.findById(skillId)
+                .orElseThrow(() -> new NoSuchElementException("Skill not found"));
+
+        if (body.containsKey("skillType"))    skill.setSkillType(SkillType.valueOf((String) body.get("skillType")));
+        if (body.containsKey("nameEn"))       skill.setNameEn((String) body.get("nameEn"));
+        if (body.containsKey("nameKh"))       skill.setNameKh((String) body.get("nameKh"));
+        if (body.containsKey("displayOrder")) skill.setDisplayOrder((Integer) body.get("displayOrder"));
+
+        majorSkillRepository.save(skill);
+        return ResponseEntity.ok(Map.of("message", "Skill updated"));
+    }
+
+    @DeleteMapping("/{majorId}/skills/{skillId}")
+    public ResponseEntity<?> deleteSkill(@PathVariable UUID majorId, @PathVariable UUID skillId) {
+        majorSkillRepository.deleteById(skillId);
+        return ResponseEntity.ok(Map.of("message", "Skill deleted"));
+    }
+
+    // ── CAREER OPPORTUNITIES ──────────────────────────────────────────────────
+
+    /**
+     * POST /{majorId}/career-opportunities
+     * Body: { "titleEn": "Software Developer", "titleKh": "...",
+     *         "iconKey": "monitor", "displayOrder": 0 }
+     */
+    @PostMapping("/{majorId}/career-opportunities")
+    public ResponseEntity<?> addCareerOpportunity(
+            @PathVariable UUID majorId,
+            @RequestBody Map<String, Object> body) {
+
+        Major major = majorRepository.getReferenceById(majorId);
+        MajorCareerOpportunity opp = MajorCareerOpportunity.builder()
+                .major(major)
+                .titleEn((String) body.get("titleEn"))
+                .titleKh((String) body.get("titleKh"))
+                .iconKey((String) body.get("iconKey"))
+                .displayOrder(body.containsKey("displayOrder") ? (Integer) body.get("displayOrder") : 0)
+                .build();
+
+        majorCareerOpportunityRepository.save(opp);
+        return ResponseEntity.status(201).body(Map.of("id", opp.getId(), "message", "Career opportunity added"));
+    }
+
+    @PutMapping("/{majorId}/career-opportunities/{oppId}")
+    public ResponseEntity<?> updateCareerOpportunity(
+            @PathVariable UUID majorId,
+            @PathVariable UUID oppId,
+            @RequestBody Map<String, Object> body) {
+
+        MajorCareerOpportunity opp = majorCareerOpportunityRepository.findById(oppId)
+                .orElseThrow(() -> new NoSuchElementException("Career opportunity not found"));
+
+        if (body.containsKey("titleEn"))      opp.setTitleEn((String) body.get("titleEn"));
+        if (body.containsKey("titleKh"))      opp.setTitleKh((String) body.get("titleKh"));
+        if (body.containsKey("iconKey"))      opp.setIconKey((String) body.get("iconKey"));
+        if (body.containsKey("displayOrder")) opp.setDisplayOrder((Integer) body.get("displayOrder"));
+
+        majorCareerOpportunityRepository.save(opp);
+        return ResponseEntity.ok(Map.of("message", "Career opportunity updated"));
+    }
+
+    @DeleteMapping("/{majorId}/career-opportunities/{oppId}")
+    public ResponseEntity<?> deleteCareerOpportunity(@PathVariable UUID majorId, @PathVariable UUID oppId) {
+        majorCareerOpportunityRepository.deleteById(oppId);
+        return ResponseEntity.ok(Map.of("message", "Career opportunity deleted"));
     }
 }
