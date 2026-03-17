@@ -21,7 +21,6 @@ public class TuitionFeeStructure {
     @JoinColumn(name = "university_id", nullable = false)
     private University university;
 
-    /** "Regular Program", "International Program (iFE)", "IT Engineering" */
     @Column(name = "program_type_en", nullable = false, length = 150)
     private String programTypeEn;
 
@@ -34,7 +33,6 @@ public class TuitionFeeStructure {
     @Column(name = "fee_per_year", precision = 10, scale = 2)
     private BigDecimal feePerYear;
 
-    /** "Subsidized by Gov.", "Lab fees included", "English Medium" */
     @Column(name = "notes_en", length = 300)
     private String notesEn;
 

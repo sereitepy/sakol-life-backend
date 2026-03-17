@@ -32,14 +32,12 @@ public class AdmissionRequirement {
     @Column(name = "description_kh", columnDefinition = "TEXT")
     private String descriptionKh;
 
-    /** Optional CTA link — e.g. "View Exam Schedule →" */
     @Column(name = "link_label_en", length = 100)
     private String linkLabelEn;
 
     @Column(name = "link_url", columnDefinition = "TEXT")
     private String linkUrl;
 
-    /** Icon key for frontend — "diploma", "star", "clipboard" */
     @Column(name = "icon_key", length = 50)
     private String iconKey;
 

@@ -9,17 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-/**
- * GET /api/v1/universities/{id}/detail
- *
- * Powers the individual University detail page with all sections:
- *  - Hero banner + overview stats
- *  - Selected major card (if user has a selected major offered by this university)
- *  - Admission requirements
- *  - Tuition & fees table
- *  - Scholarships
- *  - Campus facilities (icon list + photo grid)
- */
+//GET /api/v1/universities/{id}/detail
+
 @RestController
 @RequestMapping("/api/v1/universities")
 @RequiredArgsConstructor
@@ -36,47 +27,7 @@ public class UniversityDetailController {
     private final ProfileRepository profileRepository;
     private final GuestMajorSelectionRepository guestMajorSelectionRepository;
 
-    /**
-     * GET /api/v1/universities/{id}/detail
-     *
-     * Optional headers for personalisation:
-     *   Authorization: Bearer <jwt>          — registered user, loads selectedMajor from profile
-     *   X-Guest-Session-Id: <uuid>           — guest, loads selectedMajor from guest_major_selections
-     *
-     * Response:
-     * {
-     *   "universityId": "uuid",
-     *   "nameEn": "Royal University of Phnom Penh",
-     *   "nameKh": "...",
-     *   "type": "PUBLIC",
-     *   "locationCity": "Phnom Penh",
-     *   "logoUrl": "...",
-     *   "bannerUrl": "...",
-     *   "websiteUrl": "...",
-     *   "establishedDate": "1960-01-13",
-     *   "accreditation": "ACC Accredited",
-     *   "overviewEn": "...",
-     *   "overviewKh": "...",
-     *   "selectedMajorProgram": {             // null if user has no selected major OR
-     *     "universityMajorId": "uuid",        // this university doesn't offer it
-     *     "majorId": "uuid",
-     *     "majorCode": "CS",
-     *     "majorNameEn": "Computer Science",
-     *     "department": "Department of Computer Science",
-     *     "degreeType": "Bachelor of Science",
-     *     "durationYears": 4,
-     *     "credits": 128,
-     *     "language": "Eng / Khmer",
-     *     "internshipRequired": true,
-     *     "careerProspects": ["Software Engineer", "Data Analyst", ...]
-     *   },
-     *   "admissionRequirements": [ ... ],
-     *   "tuitionFees": [ ... ],
-     *   "scholarships": [ ... ],
-     *   "facilities": [ ... ],
-     *   "facilityPhotos": [ ... ]
-     * }
-     */
+//GET /api/v1/universities/{id}/detail
     @GetMapping("/{id}/detail")
     public ResponseEntity<?> getUniversityDetail(
             @PathVariable UUID id,
@@ -86,7 +37,6 @@ public class UniversityDetailController {
         University university = universityRepository.findById(id).orElse(null);
         if (university == null) return ResponseEntity.notFound().build();
 
-        // Resolve the user's currently selected major
         Major selectedMajor = null;
         if (authentication != null && authentication.isAuthenticated()) {
             UUID userId = (UUID) authentication.getPrincipal();
@@ -98,7 +48,6 @@ public class UniversityDetailController {
                     .map(GuestMajorSelection::getMajor).orElse(null);
         }
 
-        // Selected major program — this university's offering of the selected major
         Map<String, Object> selectedMajorProgram = null;
         if (selectedMajor != null) {
             final UUID majorId = selectedMajor.getId();

@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/** One icon row in the Campus Facilities section (e.g. "Hun Sen Library"). */
 @Entity
 @Table(name = "facilities")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -27,10 +26,6 @@ public class Facility {
     @Column(name = "name_kh", length = 150)
     private String nameKh;
 
-    /**
-     * Icon key passed to the frontend icon component.
-     * e.g. "library", "flask", "utensils", "dribbble", "wifi"
-     */
     @Column(name = "icon_key", length = 50)
     private String iconKey;
 

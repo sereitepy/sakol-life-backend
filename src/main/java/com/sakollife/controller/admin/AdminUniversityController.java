@@ -1,4 +1,4 @@
-package com.sakollife.controller;
+package com.sakollife.controller.admin;
 
 import com.sakollife.entity.*;
 import com.sakollife.repository.*;
@@ -14,26 +14,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
-/**
- * Admin CRUD for University detail page content.
- * All endpoints require ROLE_ADMIN.
- *
- * Base: /api/v1/admin/universities
- *
- * University fields:   PATCH /{id}
- * Banner upload:       POST  /{id}/upload-banner  (multipart)
- * Banner delete:       DELETE /{id}/banner
- *
- * Admission:           POST/PUT/DELETE /{id}/admissions/{reqId}
- * Tuition:             POST/PUT/DELETE /{id}/tuition/{feeId}
- * Scholarships:        POST/PUT/DELETE /{id}/scholarships/{scholarshipId}
- * Facilities:          POST/PUT/DELETE /{id}/facilities/{facilityId}
- * Facility photos:     POST /{id}/facility-photos/upload  (multipart)
- *                      DELETE /{id}/facility-photos/{photoId}
- *
- * UniversityMajor:     PATCH /{id}/university-majors/{umId}
- * UM Career Prospects: POST/DELETE /{id}/university-majors/{umId}/prospects
- */
 @RestController
 @RequestMapping("/api/v1/admin/universities")
 @RequiredArgsConstructor
@@ -50,7 +30,6 @@ public class AdminUniversityController {
     private final FacilityPhotoRepository facilityPhotoRepository;
     private final StorageService storageService;
 
-    // ── PATCH /{id} — update university overview fields ───────────────────────
 
     @PatchMapping("/{id}")
     public ResponseEntity<?> updateUniversity(
@@ -75,7 +54,6 @@ public class AdminUniversityController {
         return ResponseEntity.ok(Map.of("message", "University updated"));
     }
 
-    // ── BANNER ────────────────────────────────────────────────────────────────
 
     @PostMapping(value = "/{id}/upload-banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadBanner(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
@@ -99,7 +77,6 @@ public class AdminUniversityController {
         return ResponseEntity.ok(Map.of("message", "Banner removed"));
     }
 
-    // ── ADMISSION REQUIREMENTS ────────────────────────────────────────────────
 
     @PostMapping("/{id}/admissions")
     public ResponseEntity<?> addAdmission(@PathVariable UUID id, @RequestBody Map<String, Object> body) {
@@ -142,7 +119,6 @@ public class AdminUniversityController {
         return ResponseEntity.ok(Map.of("message", "Admission requirement deleted"));
     }
 
-    // ── TUITION FEES ──────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/tuition")
     public ResponseEntity<?> addTuition(@PathVariable UUID id, @RequestBody Map<String, Object> body) {
@@ -187,8 +163,6 @@ public class AdminUniversityController {
         return ResponseEntity.ok(Map.of("message", "Tuition fee deleted"));
     }
 
-    // ── SCHOLARSHIPS ──────────────────────────────────────────────────────────
-
     @PostMapping("/{id}/scholarships")
     public ResponseEntity<?> addScholarship(@PathVariable UUID id, @RequestBody Map<String, Object> body) {
         University u = universityRepository.getReferenceById(id);
@@ -226,8 +200,6 @@ public class AdminUniversityController {
         return ResponseEntity.ok(Map.of("message", "Scholarship deleted"));
     }
 
-    // ── FACILITIES ────────────────────────────────────────────────────────────
-
     @PostMapping("/{id}/facilities")
     public ResponseEntity<?> addFacility(@PathVariable UUID id, @RequestBody Map<String, Object> body) {
         University u = universityRepository.getReferenceById(id);
@@ -261,8 +233,6 @@ public class AdminUniversityController {
         return ResponseEntity.ok(Map.of("message", "Facility deleted"));
     }
 
-    // ── FACILITY PHOTOS ───────────────────────────────────────────────────────
-
     @PostMapping(value = "/{id}/facility-photos/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadFacilityPhoto(
             @PathVariable UUID id,
@@ -295,8 +265,6 @@ public class AdminUniversityController {
         });
         return ResponseEntity.ok(Map.of("message", "Facility photo deleted"));
     }
-
-    // ── UNIVERSITY MAJOR program details ──────────────────────────────────────
 
     @PatchMapping("/{id}/university-majors/{umId}")
     public ResponseEntity<?> updateUniversityMajor(

@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/** Photo in the facility photo grid — uploaded to DO Spaces by admin. */
 @Entity
 @Table(name = "facility_photos")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -21,7 +20,6 @@ public class FacilityPhoto {
     @JoinColumn(name = "university_id", nullable = false)
     private University university;
 
-    /** DO Spaces CDN URL — set by admin upload endpoint */
     @Column(name = "photo_url", nullable = false, columnDefinition = "TEXT")
     private String photoUrl;
 

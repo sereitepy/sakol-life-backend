@@ -121,21 +121,8 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Custom filter that:
-     * 1. Validates the Supabase JWT using the JWKS endpoint (ES256)
-     * 2. Extracts the user UUID from the 'sub' claim
-     * 3. Reads the app role from 'app_metadata.app_role' (defaults to USER)
-     * 4. Sets a UsernamePasswordAuthenticationToken with UUID as principal
-     *
-     * This gives controllers access to the UUID via:
-     *   UUID userId = (UUID) authentication.getPrincipal();
-     *
-     * To make a user admin:
-     *   Supabase Dashboard → Authentication → Users → select user → Edit App Metadata:
-     *   { "app_role": "ADMIN" }
-     *   Then the user must log in again to get a fresh token containing the new claim.
-     */
+
+
     @Slf4j
     static class SupabaseJwtFilter extends OncePerRequestFilter {
 
@@ -182,10 +169,7 @@ public class SecurityConfig {
         /**
          * Reads app_role from the JWT's app_metadata claim.
          * Supabase puts custom app_metadata into the JWT automatically.
-         *
-         * Example app_metadata to set in Supabase Dashboard:
-         *   { "app_role": "ADMIN" }
-         *
+
          * Defaults to USER if not set.
          */
         @SuppressWarnings("unchecked")

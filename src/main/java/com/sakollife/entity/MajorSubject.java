@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/** One "What You'll Study" subject card for a major. */
 @Entity
 @Table(name = "major_subjects")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -33,10 +32,6 @@ public class MajorSubject {
     @Column(name = "description_kh", columnDefinition = "TEXT")
     private String descriptionKh;
 
-    /**
-     * Icon identifier passed to the frontend icon system.
-     * e.g. "code", "database", "shield", "cpu", "bar-chart"
-     */
     @Column(name = "icon_key", length = 50)
     private String iconKey;
 

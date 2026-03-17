@@ -26,8 +26,6 @@ public class Major {
     @Column(nullable = false, unique = true, length = 10)
     private String code;
 
-    // ── Display ───────────────────────────────────────────────────────────────
-
     @Column(name = "name_en", nullable = false)
     private String nameEn;
 
@@ -40,23 +38,17 @@ public class Major {
     @Column(name = "description_kh", columnDefinition = "TEXT")
     private String descriptionKh;
 
-    /** "Faculty of Engineering & Technology" — chip above the major title */
     @Column(name = "faculty", length = 200)
     private String faculty;
 
-    /** "Bachelor of Science" */
     @Column(name = "degree_type", length = 100)
     private String degreeType;
 
-    /** "English / Khmer" */
     @Column(name = "language", length = 100)
     private String language;
 
-    /** Small icon shown in Related Majors sidebar and major cards */
     @Column(name = "icon_url", columnDefinition = "TEXT")
     private String iconUrl;
-
-    // ── Filter fields ─────────────────────────────────────────────────────────
 
     @Enumerated(EnumType.STRING)
     @Column(name = "career_category", length = 50)
@@ -66,21 +58,15 @@ public class Major {
     @Column(name = "job_outlook", length = 10)
     private JobOutlook jobOutlook;
 
-    // ── Job Market sidebar ────────────────────────────────────────────────────
-
-    /** VERY_HIGH | HIGH | MEDIUM | LOW — drives the demand bar colour */
     @Enumerated(EnumType.STRING)
     @Column(name = "job_demand_level", length = 20)
     private JobDemandLevel jobDemandLevel;
 
-    /** Entry-level salary range, USD/month */
     @Column(name = "salary_min")
     private Integer salaryMin;
 
     @Column(name = "salary_max")
     private Integer salaryMax;
-
-    // ── RIASEC vector ─────────────────────────────────────────────────────────
 
     @Column(name = "riasec_r", nullable = false, precision = 4, scale = 2)
     private BigDecimal riasecR;
@@ -100,8 +86,6 @@ public class Major {
     @Column(name = "riasec_c", nullable = false, precision = 4, scale = 2)
     private BigDecimal riasecC;
 
-    // ── Child collections (lazy — only loaded in detail endpoint) ─────────────
-
     @OneToMany(mappedBy = "major", cascade = CascadeType.ALL, orphanRemoval = true,
             fetch = FetchType.LAZY)
     @OrderBy("displayOrder ASC")
@@ -119,8 +103,6 @@ public class Major {
     @OrderBy("displayOrder ASC")
     @Builder.Default
     private List<MajorCareerOpportunity> careerOpportunities = new ArrayList<>();
-
-    // ── Timestamps ────────────────────────────────────────────────────────────
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

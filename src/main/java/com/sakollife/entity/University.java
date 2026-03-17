@@ -32,7 +32,6 @@ public class University {
     @Column(name = "logo_url")
     private String logoUrl;
 
-    /** Full-width hero banner — uploaded to DO Spaces by admin */
     @Column(name = "banner_url", columnDefinition = "TEXT")
     private String bannerUrl;
 
@@ -42,8 +41,6 @@ public class University {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UniversityType type;
-
-    // ── Overview section ──────────────────────────────────────────────────────
 
     @Column(name = "established_date")
     private LocalDate establishedDate;
@@ -56,8 +53,6 @@ public class University {
 
     @Column(name = "overview_kh", columnDefinition = "TEXT")
     private String overviewKh;
-
-    // ── Child collections (lazy — only loaded in detail endpoint) ─────────────
 
     @OneToMany(mappedBy = "university", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("displayOrder ASC")

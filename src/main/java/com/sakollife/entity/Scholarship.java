@@ -27,10 +27,6 @@ public class Scholarship {
     @Column(name = "name_kh", length = 200)
     private String nameKh;
 
-    /**
-     * Badge label — shown as a coloured chip on the scholarship card.
-     * e.g. "100% Tuition", "50% Grant"
-     */
     @Column(name = "coverage_label", length = 50)
     private String coverageLabel;
 

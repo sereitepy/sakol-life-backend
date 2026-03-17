@@ -36,7 +36,6 @@ public class MajorDetailController {
         Major major = majorRepository.findById(id).orElse(null);
         if (major == null) return ResponseEntity.notFound().build();
 
-        // Similarity % — only for authenticated users with a quiz attempt
         Integer similarityPercentage = null;
         if (authentication != null && authentication.isAuthenticated()) {
             UUID userId = (UUID) authentication.getPrincipal();
@@ -47,7 +46,6 @@ public class MajorDetailController {
                         .filter(r -> r.getMajor().getId().equals(id))
                         .findFirst()
                         .ifPresent(r -> {
-                            // can't assign to lambda var — handled below
                         });
                 similarityPercentage = results.stream()
                         .filter(r -> r.getMajor().getId().equals(id))
@@ -57,7 +55,6 @@ public class MajorDetailController {
             }
         }
 
-        // Subjects
         List<Map<String, Object>> subjects = majorSubjectRepository
                 .findByMajorIdOrderByDisplayOrderAsc(id).stream()
                 .map(s -> {
@@ -68,7 +65,6 @@ public class MajorDetailController {
                     return m;
                 }).toList();
 
-        // Skills split by type
         List<Map<String, Object>> technicalSkills = majorSkillRepository
                 .findByMajorIdAndSkillTypeOrderByDisplayOrderAsc(id, SkillType.TECHNICAL)
                 .stream().map(this::buildSkillMap).toList();
@@ -77,7 +73,6 @@ public class MajorDetailController {
                 .findByMajorIdAndSkillTypeOrderByDisplayOrderAsc(id, SkillType.SOFT)
                 .stream().map(this::buildSkillMap).toList();
 
-        // Career opportunities
         List<Map<String, Object>> careerOpportunities = majorCareerOpportunityRepository
                 .findByMajorIdOrderByDisplayOrderAsc(id).stream()
                 .map(c -> {
@@ -87,7 +82,6 @@ public class MajorDetailController {
                     return m;
                 }).toList();
 
-        // Related majors — exclude self, take 3
         List<Map<String, Object>> relatedMajors = majorRepository.findAll().stream()
                 .filter(m -> !m.getId().equals(id))
                 .limit(3)
@@ -99,7 +93,6 @@ public class MajorDetailController {
                     return rm;
                 }).toList();
 
-        // Build response
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("majorId", major.getId());
         response.put("code", major.getCode());

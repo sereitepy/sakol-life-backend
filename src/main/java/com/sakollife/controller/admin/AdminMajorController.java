@@ -1,4 +1,4 @@
-package com.sakollife.controller;
+package com.sakollife.controller.admin;
 
 import com.sakollife.entity.*;
 import com.sakollife.entity.enums.SkillType;
@@ -10,30 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-/**
- * Admin CRUD for Major detail page content.
- * All endpoints require ROLE_ADMIN.
- *
- * Base: /api/v1/admin/majors
- *
- * Subjects:
- *   POST   /{majorId}/subjects
- *   PUT    /{majorId}/subjects/{subjectId}
- *   DELETE /{majorId}/subjects/{subjectId}
- *
- * Skills:
- *   POST   /{majorId}/skills
- *   PUT    /{majorId}/skills/{skillId}
- *   DELETE /{majorId}/skills/{skillId}
- *
- * Career Opportunities:
- *   POST   /{majorId}/career-opportunities
- *   PUT    /{majorId}/career-opportunities/{oppId}
- *   DELETE /{majorId}/career-opportunities/{oppId}
- *
- * Major fields (faculty, degreeType, language, jobDemandLevel, salary, iconUrl):
- *   PATCH  /{majorId}
- */
 @RestController
 @RequestMapping("/api/v1/admin/majors")
 @RequiredArgsConstructor
@@ -45,7 +21,6 @@ public class AdminMajorController {
     private final MajorSkillRepository majorSkillRepository;
     private final MajorCareerOpportunityRepository majorCareerOpportunityRepository;
 
-    // ── PATCH /{majorId} — update major top-level fields ─────────────────────
 
     /**
      * Update top-level major fields.
@@ -82,12 +57,8 @@ public class AdminMajorController {
         return ResponseEntity.ok(Map.of("message", "Major updated", "majorId", majorId));
     }
 
-    // ── SUBJECTS ──────────────────────────────────────────────────────────────
-
     /**
      * POST /{majorId}/subjects
-     * Body: { "nameEn": "...", "nameKh": "...", "descriptionEn": "...",
-     *         "descriptionKh": "...", "iconKey": "code", "displayOrder": 0 }
      */
     @PostMapping("/{majorId}/subjects")
     public ResponseEntity<?> addSubject(
@@ -135,12 +106,9 @@ public class AdminMajorController {
         return ResponseEntity.ok(Map.of("message", "Subject deleted"));
     }
 
-    // ── SKILLS ────────────────────────────────────────────────────────────────
 
     /**
      * POST /{majorId}/skills
-     * Body: { "skillType": "TECHNICAL", "nameEn": "Java / Python / C++",
-     *         "nameKh": "...", "displayOrder": 0 }
      */
     @PostMapping("/{majorId}/skills")
     public ResponseEntity<?> addSkill(
@@ -184,12 +152,9 @@ public class AdminMajorController {
         return ResponseEntity.ok(Map.of("message", "Skill deleted"));
     }
 
-    // ── CAREER OPPORTUNITIES ──────────────────────────────────────────────────
 
     /**
      * POST /{majorId}/career-opportunities
-     * Body: { "titleEn": "Software Developer", "titleKh": "...",
-     *         "iconKey": "monitor", "displayOrder": 0 }
      */
     @PostMapping("/{majorId}/career-opportunities")
     public ResponseEntity<?> addCareerOpportunity(

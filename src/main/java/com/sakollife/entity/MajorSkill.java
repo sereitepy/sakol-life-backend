@@ -8,7 +8,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/** One skill tag in "Skills You'll Gain". skillType = TECHNICAL or SOFT. */
 @Entity
 @Table(name = "major_skills")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

@@ -1,4 +1,4 @@
-package com.sakollife.service;
+package com.sakollife.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,21 +42,14 @@ public class StorageService {
                 .build();
     }
 
-    /** Upload university hero banner. Key: university-banners/<uuid>.<ext> */
     public String uploadUniversityBanner(UUID universityId, MultipartFile file) {
         return upload("university-banners/" + universityId + "." + getExtension(file), file);
     }
 
-    /**
-     * Upload a facility photo.
-     * Key: facility-photos/<universityId>/<randomUUID>.<ext>
-     * Uses a random UUID so multiple photos per university don't overwrite each other.
-     */
     public String uploadFacilityPhoto(UUID universityId, MultipartFile file) {
         return upload("facility-photos/" + universityId + "/" + UUID.randomUUID() + "." + getExtension(file), file);
     }
 
-    /** Delete an object by its full CDN URL. */
     public void deleteByUrl(String cdnUrl) {
         if (cdnUrl == null || !cdnUrl.startsWith(cdnBaseUrl)) return;
         String key = cdnUrl.substring(cdnBaseUrl.length());
@@ -67,9 +60,6 @@ public class StorageService {
             log.warn("Failed to delete DO Spaces object {}: {}", key, e.getMessage());
         }
     }
-
-    // ── Internal ──────────────────────────────────────────────────────────────
-
     private String upload(String key, MultipartFile file) {
         validateImageFile(file);
         try {

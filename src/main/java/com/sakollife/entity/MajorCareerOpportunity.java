@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/** One career opportunity card in the "Career Opportunities" section. */
 @Entity
 @Table(name = "major_career_opportunities")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -27,10 +26,6 @@ public class MajorCareerOpportunity {
     @Column(name = "title_kh", length = 150)
     private String titleKh;
 
-    /**
-     * Icon identifier for the frontend.
-     * e.g. "monitor", "bar-chart2", "globe", "shield", "code"
-     */
     @Column(name = "icon_key", length = 50)
     private String iconKey;
 
