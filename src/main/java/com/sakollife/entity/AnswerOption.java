@@ -10,17 +10,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/**
- * Represents one answer option for a SINGLE_CHOICE question.
- * Each option defines exactly how much it contributes to each RIASEC dimension.
- *
- * Example: Q3 option "A" (Designing) contributes riasec_a=1.0, all others 0 yes
- * Example: Q3 option "C" (Security) contributes riasec_r=1.0, riasec_i=1.0, others 0
- * yes yes
- *
- * The VectorCalculator multiplies these contributions by:
- *   base_score (typically 4 or 5) × question.weight / number_of_contributing_dimensions
- */
 @Entity
 @Table(name = "answer_options",
        uniqueConstraints = @UniqueConstraint(columnNames = {"question_id", "option_letter"}))

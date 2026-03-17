@@ -179,19 +179,6 @@ public class SelectedMajorController {
 
     // GET /api/v1/selected-major/universities
 
-    /**
-     * Returns universities for the currently selected major.
-     * Supports filter query params: type, city, maxFee, durationYears.
-     *
-     * Works for both registered users and guests.
-     * Returns 409 if no major is selected.
-     *
-     * Response 200:
-     * {
-     *   "selectedMajor": { ... },
-     *   "universities": [ ... ]
-     * }
-     */
     @GetMapping("/universities")
     public ResponseEntity<?> getUniversitiesForSelectedMajor(
             Authentication authentication,
@@ -203,14 +190,12 @@ public class SelectedMajorController {
 
         Major selectedMajor = null;
 
-        // Registered user path
         if (authentication != null && authentication.isAuthenticated()) {
             UUID userId = (UUID) authentication.getPrincipal();
             Profile profile = profileRepository.findById(userId)
                     .orElseThrow(() -> new NoSuchElementException("Profile not found"));
             selectedMajor = profile.getSelectedMajor();
         }
-        // Guest path
         else if (guestSessionId != null) {
             selectedMajor = guestMajorSelectionRepository
                     .findByGuestSessionId(guestSessionId)
@@ -245,8 +230,8 @@ public class SelectedMajorController {
         map.put("nameKh",         m.getNameKh());
         map.put("descriptionEn",  m.getDescriptionEn());
         map.put("descriptionKh",  m.getDescriptionKh());
-        map.put("careerCategory", m.getCareerCategory());   // NEW — filter chip
-        map.put("jobOutlook",     m.getJobOutlook());       // NEW — badge
+        map.put("careerCategory", m.getCareerCategory());
+        map.put("jobOutlook",     m.getJobOutlook());
         return map;
     }
 
@@ -269,7 +254,7 @@ public class SelectedMajorController {
                     entry.put("locationCity",    u.getLocationCity());
                     entry.put("type",            u.getType());
                     entry.put("logoUrl",         u.getLogoUrl());
-                    entry.put("bannerUrl",       u.getBannerUrl());   // NEW — for card image
+                    entry.put("bannerUrl",       u.getBannerUrl());
                     entry.put("websiteUrl",      u.getWebsiteUrl());
                     entry.put("tuitionFeeUsd",   um.getTuitionFeeUsd());
                     entry.put("durationYears",   um.getDurationYears());

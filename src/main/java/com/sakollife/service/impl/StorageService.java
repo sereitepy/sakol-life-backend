@@ -1,4 +1,4 @@
-package com.sakollife.service;
+package com.sakollife.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,18 +16,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
 
-/**
- * Handles file uploads to Digital Ocean Spaces (S3-compatible).
- *
- * Configuration (add to application.properties or environment):
- *   do.spaces.endpoint=https://<region>.digitaloceanspaces.com
- *   do.spaces.bucket=<your-space-name>
- *   do.spaces.access-key=<your-access-key>
- *   do.spaces.secret-key=<your-secret-key>
- *   do.spaces.cdn-base-url=https://<your-space-name>.<region>.cdn.digitaloceanspaces.com
- *
- * DO Spaces is fully S3-compatible — we use AWS SDK v2 pointed at the DO endpoint.
- */
 @Service
 @Slf4j
 public class StorageService {
@@ -48,54 +36,20 @@ public class StorageService {
 
         this.s3Client = S3Client.builder()
                 .endpointOverride(URI.create(endpoint))
-                // DO Spaces works with any AWS region string — use the actual DO region
                 .region(Region.of("us-east-1"))
-                .credentialsProvider(
-                        StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(accessKey, secretKey)))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKey, secretKey)))
                 .build();
     }
 
-    /**
-     * Uploads a university banner image to DO Spaces.
-     *
-     * @param universityId  used to build a stable, predictable object key
-     * @param file          the multipart file from the admin request
-     * @return              the public CDN URL of the uploaded image
-     */
     public String uploadUniversityBanner(UUID universityId, MultipartFile file) {
-        validateImageFile(file);
-
-        String extension = getExtension(file.getOriginalFilename());
-        // Key format: university-banners/<uuid>.<ext>
-        // Using the UUID means re-uploading replaces the old image automatically
-        String key = "university-banners/" + universityId + "." + extension;
-
-        try {
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .contentType(file.getContentType())
-                    .acl(ObjectCannedACL.PUBLIC_READ)   // banner is publicly viewable
-                    .build();
-
-            s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
-            log.info("Uploaded banner for university {} → {}", universityId, key);
-
-            return cdnBaseUrl + key;
-
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read upload file: " + e.getMessage(), e);
-        } catch (Exception e) {
-            throw new RuntimeException("DO Spaces upload failed: " + e.getMessage(), e);
-        }
+        return upload("university-banners/" + universityId + "." + getExtension(file), file);
     }
 
-    /**
-     * Deletes an object from DO Spaces by its full CDN URL.
-     * Used when replacing a banner — optional, old key is overwritten anyway
-     * if the filename is UUID-based, but useful for explicit cleanup.
-     */
+    public String uploadFacilityPhoto(UUID universityId, MultipartFile file) {
+        return upload("facility-photos/" + universityId + "/" + UUID.randomUUID() + "." + getExtension(file), file);
+    }
+
     public void deleteByUrl(String cdnUrl) {
         if (cdnUrl == null || !cdnUrl.startsWith(cdnBaseUrl)) return;
         String key = cdnUrl.substring(cdnBaseUrl.length());
@@ -106,25 +60,36 @@ public class StorageService {
             log.warn("Failed to delete DO Spaces object {}: {}", key, e.getMessage());
         }
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private void validateImageFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("Only image files are allowed. Received: " + contentType);
-        }
-        // 5 MB max
-        if (file.getSize() > 5 * 1024 * 1024) {
-            throw new IllegalArgumentException("File too large. Max size is 5 MB.");
+    private String upload(String key, MultipartFile file) {
+        validateImageFile(file);
+        try {
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(bucket).key(key)
+                    .contentType(file.getContentType())
+                    .acl(ObjectCannedACL.PUBLIC_READ)
+                    .build();
+            s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
+            log.info("Uploaded to DO Spaces: {}", key);
+            return cdnBaseUrl + key;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read upload file: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("DO Spaces upload failed: " + e.getMessage(), e);
         }
     }
 
-    private String getExtension(String filename) {
-        if (filename == null || !filename.contains(".")) return "jpg";
-        return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+    private void validateImageFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) throw new IllegalArgumentException("File is empty");
+        String ct = file.getContentType();
+        if (ct == null || !ct.startsWith("image/"))
+            throw new IllegalArgumentException("Only image files allowed. Got: " + ct);
+        if (file.getSize() > 5 * 1024 * 1024)
+            throw new IllegalArgumentException("File too large. Max 5 MB.");
+    }
+
+    private String getExtension(MultipartFile file) {
+        String name = file.getOriginalFilename();
+        if (name == null || !name.contains(".")) return "jpg";
+        return name.substring(name.lastIndexOf('.') + 1).toLowerCase();
     }
 }

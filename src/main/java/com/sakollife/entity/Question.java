@@ -12,18 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Represents a quiz question. Replaces the hardcoded question logic in VectorCalculator.
- *
- * question_code: "Q1", "Q2", "Q4_A" etc.
- * format: SINGLE_CHOICE (letter answers) or LIKERT (1–5 scale)
- * weight: 1.0, 1.5, or 2.0 — how much this question influences the vector
- * display_order: controls the order questions appear in the quiz
- *
- * For LIKERT questions, there are no AnswerOptions rows.
- * Instead, riasec_* columns on this entity define which dimensions
- * the likert score contributes to (non-zero = contributes).
- */
 @Entity
 @Table(name = "questions")
 @Getter

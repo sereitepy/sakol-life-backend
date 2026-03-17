@@ -1,28 +1,22 @@
 package com.sakollife.entity;
 
 import com.sakollife.entity.enums.CareerCategory;
+import com.sakollife.entity.enums.JobDemandLevel;
 import com.sakollife.entity.enums.JobOutlook;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * Seeded with the 9 technology majors.
- * RIASEC fields store the major's profile vector (weighted H/M/L values).
- * careerCategory  — used as a filter chip on the results page
- * jobOutlook      — HIGH / MEDIUM / LOW demand in job market
- */
 @Entity
 @Table(name = "majors")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Major {
 
     @Id
@@ -30,7 +24,7 @@ public class Major {
     private UUID id;
 
     @Column(nullable = false, unique = true, length = 10)
-    private String code; // CS, AI, DS, MWD, CYB, NET, DD, DB, MIS
+    private String code;
 
     @Column(name = "name_en", nullable = false)
     private String nameEn;
@@ -44,25 +38,35 @@ public class Major {
     @Column(name = "description_kh", columnDefinition = "TEXT")
     private String descriptionKh;
 
-    // Filter fields
+    @Column(name = "faculty", length = 200)
+    private String faculty;
 
-    /**
-     * Career category — maps to a filter chip on the Majors results page.
-     * e.g. SOFTWARE_ENGINEERING, ARTIFICIAL_INTELLIGENCE, DATA_ANALYTICS …
-     */
+    @Column(name = "degree_type", length = 100)
+    private String degreeType;
+
+    @Column(name = "language", length = 100)
+    private String language;
+
+    @Column(name = "icon_url", columnDefinition = "TEXT")
+    private String iconUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "career_category", length = 50)
     private CareerCategory careerCategory;
 
-    /**
-     * Job market demand level for this major.
-     * HIGH / MEDIUM / LOW — shown as a badge on the major card.
-     */
     @Enumerated(EnumType.STRING)
     @Column(name = "job_outlook", length = 10)
     private JobOutlook jobOutlook;
 
-    // RIASEC vector
+    @Enumerated(EnumType.STRING)
+    @Column(name = "job_demand_level", length = 20)
+    private JobDemandLevel jobDemandLevel;
+
+    @Column(name = "salary_min")
+    private Integer salaryMin;
+
+    @Column(name = "salary_max")
+    private Integer salaryMax;
 
     @Column(name = "riasec_r", nullable = false, precision = 4, scale = 2)
     private BigDecimal riasecR;
@@ -82,7 +86,29 @@ public class Major {
     @Column(name = "riasec_c", nullable = false, precision = 4, scale = 2)
     private BigDecimal riasecC;
 
+    @OneToMany(mappedBy = "major", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<MajorSubject> subjects = new ArrayList<>();
+
+    @OneToMany(mappedBy = "major", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<MajorSkill> skills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "major", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<MajorCareerOpportunity> careerOpportunities = new ArrayList<>();
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 }

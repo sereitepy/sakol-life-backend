@@ -39,14 +39,6 @@ public class Profile {
     @Builder.Default
     private Role role = Role.USER;
 
-    /**
-     * The major the user has currently selected on their results page.
-     * Nullable. null means no major is selected and the University tab is unavailable.
-     * Set when the user clicks a major card.
-     * Cleared when the user clicks X on the selected major.
-     *
-     * Stored as selected_major_id (FK → majors.id) on the profiles table.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "selected_major_id", nullable = true)
     private Major selectedMajor;

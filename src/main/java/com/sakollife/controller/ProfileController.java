@@ -26,12 +26,6 @@ public class ProfileController {
 
     /**
      * POST /api/v1/profile/init
-     *
-     * Creates the profile row for a newly registered user.
-     * Called once immediately after Supabase Auth registration.
-     *
-     * Body (optional fields):
-     * { "displayName": "...", "preferredLanguage": "EN" | "KH" }
      */
     @PostMapping("/init")
     public ResponseEntity<?> initProfile(
@@ -65,12 +59,6 @@ public class ProfileController {
 
     /**
      * GET /api/v1/profile
-     *
-     * Returns the authenticated user's full profile including:
-     *  - display name, picture, language preference, role
-     *  - totalAttempts
-     *  - selectedMajor
-     *  - latestAnswers
      */
     @GetMapping
     public ResponseEntity<?> getProfile(Authentication authentication) {
@@ -94,11 +82,9 @@ public class ProfileController {
                         .toList())
                 .orElse(Collections.emptyList());
 
-        // selectedMajor
-        // Reflects Profile.selectedMajor which is set by PUT /api/v1/selected-major.
+
         Map<String, Object> selectedMajorBlock = buildSelectedMajorBlock(profile.getSelectedMajor());
 
-        // Build response
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("id",                profile.getId());
         response.put("displayName",       profile.getDisplayName());
@@ -107,20 +93,14 @@ public class ProfileController {
         response.put("preferredLanguage", profile.getPreferredLanguage());
         response.put("role",              profile.getRole());
         response.put("totalAttempts",     attemptCount);
-        response.put("selectedMajor",     selectedMajorBlock);   // null only if never selected
-        response.put("latestAnswers",      latestAnswers);        // empty only if never submitted while logged in
+        response.put("selectedMajor",     selectedMajorBlock);
+        response.put("latestAnswers",      latestAnswers);
 
         return ResponseEntity.ok(response);
     }
 
     /**
      * PUT /api/v1/profile
-     *
-     * Update display name, profile picture URL, or preferred language.
-     *
-     * NOTE: selectedMajor is NOT updated here. BRUHHHHH
-     *       Use PUT /api/v1/selected-major  to select a major.
-     *       Use DELETE /api/v1/selected-major to deselect.
      */
     @PutMapping
     public ResponseEntity<?> updateProfile(
@@ -146,11 +126,6 @@ public class ProfileController {
         return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
     }
 
-    /**
-     * Builds the selectedMajor block for the profile response.
-     * Returns null (not an empty map) when no major is selected,
-     * so the frontend can do a simple null-check to toggle the University tab.
-     */
     private Map<String, Object> buildSelectedMajorBlock(Major major) {
         if (major == null) return null;
 

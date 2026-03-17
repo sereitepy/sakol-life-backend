@@ -18,19 +18,9 @@ public class UniversityController {
 
     private final UniversityMajorRepository universityMajorRepository;
 
-    /**
-     * GET /api/v1/universities?majorId=&type=&city=&maxFee=&durationYears=
-     *
-     * Returns universities offering a selected major, with optional filters.
-     * Called when the user selects a major on the results page and switches to
-     * the University tab. All filter params are optional.
-     *
-     * @param majorId       required — the selected major's UUID
-     * @param type          optional — PUBLIC or PRIVATE
-     * @param city          optional — e.g. "Phnom Penh", "Siem Reap"
-     * @param maxFee        optional — maximum tuition fee in USD
-     * @param durationYears optional — program duration in years (3 or 4)
-     */
+//    GET /api/v1/universities?majorId=&type=&city=&maxFee=&durationYears=
+
+
     @GetMapping
     public ResponseEntity<?> getUniversitiesByMajor(
             @RequestParam UUID majorId,

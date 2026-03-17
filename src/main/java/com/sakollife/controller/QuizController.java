@@ -26,8 +26,6 @@ public class QuizController {
 
     /**
      * GET /api/v1/quiz/questions
-     * Returns all active questions with options, ordered by displayOrder.
-     * Frontend handles one-by-one display locally.
      */
     @GetMapping("/questions")
     public ResponseEntity<?> getQuestions() {
@@ -57,9 +55,6 @@ public class QuizController {
 
     /**
      * POST /api/v1/quiz/submit
-     * Body: flat map of questionCode -> answerValue
-     * e.g. { "Q1": "A", "Q2": "4", "Q3": "B", "Q4_A": "5", ... } yeah
-     * Works for both guests (no auth header) and authenticated users.
      */
     @PostMapping("/submit")
     public ResponseEntity<QuizSubmitResponse> submitQuiz(

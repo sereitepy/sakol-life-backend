@@ -76,15 +76,6 @@ public class MajorController {
 
     /**
      * GET /api/v1/majors/results/{attemptId}
-     *
-     * Returns quiz results for a given attempt, filtered to score >= 0.5.
-     * Supports optional filter params:
-     *   ?careerCategory=ARTIFICIAL_INTELLIGENCE
-     *   ?jobOutlook=HIGH
-     *   ?minScore=0.7   (e.g. only show >70% match — default 0.5)
-     *
-     * This is the results page endpoint. The frontend maps these cards
-     * and the user picks one to call PUT /api/v1/selected-major.
      */
     @GetMapping("/results/{attemptId}")
     public ResponseEntity<?> getResults(

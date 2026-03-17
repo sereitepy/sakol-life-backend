@@ -8,11 +8,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/**
- * Stores cosine similarity score between a quiz attempt and each of the 9 majors.
- * One attempt produces exactly 9 rows here (one per major).
- * similarity_score: 0.0000 to 1.0000 (multiply by 100 for percentage display)
- */
 @Entity
 @Table(name = "quiz_results")
 @Getter
