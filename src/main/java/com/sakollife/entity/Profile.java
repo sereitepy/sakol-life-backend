@@ -1,5 +1,6 @@
 package com.sakollife.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sakollife.entity.enums.Language;
 import com.sakollife.entity.enums.Role;
 import jakarta.persistence.*;
@@ -41,6 +42,7 @@ public class Profile {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "selected_major_id", nullable = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Major selectedMajor;
 
     @CreationTimestamp
