@@ -25,13 +25,6 @@ public class SelectedMajorController {
 
     //  GET /api/v1/selected-major
 
-    /**
-     * Returns the currently selected major.
-     * Works for both guests (X-Guest-Session-Id header) and registered users (JWT).
-     *
-     * Response when selected:   { "selected": true,  "major": { ... } }
-     * Response when not set:    { "selected": false, "major": null }
-     */
     @GetMapping
     public ResponseEntity<?> getSelectedMajor(
             Authentication authentication,
@@ -67,30 +60,6 @@ public class SelectedMajorController {
     }
 
     // PUT /api/v1/selected-major
-
-    /**
-     * Select (or change) a major. This is the SINGLE endpoint for all user types.
-     *
-     * Body: { "majorId": "uuid" }
-     *
-     * For registered users:
-     *   - Sets Profile.selectedMajor  ← THIS is what drives the University tab
-     *   - Also upserts a SavedMajor row for history
-     *
-     * For guests:
-     *   - Replaces any prior guest_major_selections row for this session
-     *   - Returns the same university list so the UI can open the University tab
-     *
-     * Response 200:
-     * {
-     *   "selected": true,
-     *   "major": { majorId, code, nameEn, nameKh, descriptionEn, descriptionKh,
-     *              careerCategory, jobOutlook },
-     *   "universities": [ { universityId, nameEn, nameKh, type, locationCity,
-     *                        logoUrl, bannerUrl, websiteUrl,
-     *                        tuitionFeeUsd, durationYears } ]
-     * }
-     */
     @PutMapping
     @Transactional
     public ResponseEntity<?> selectMajor(
@@ -98,7 +67,11 @@ public class SelectedMajorController {
             Authentication authentication,
             @RequestHeader(value = "X-Guest-Session-Id", required = false) UUID guestSessionId) {
 
-        UUID majorId = UUID.fromString(body.get("majorId"));
+        String majorIdStr = body.get("majorId");
+        if (majorIdStr == null || majorIdStr.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "majorId is required"));
+        }
+        UUID majorId = UUID.fromString(majorIdStr);
         Major major = majorRepository.findById(majorId)
                 .orElseThrow(() -> new NoSuchElementException("Major not found: " + majorId));
 
@@ -108,11 +81,9 @@ public class SelectedMajorController {
             Profile profile = profileRepository.findById(userId)
                     .orElseThrow(() -> new NoSuchElementException("Profile not found"));
 
-            // 1. Update Profile.selectedMajor, this is what GET /api/v1/profile returns
             profile.setSelectedMajor(major);
             profileRepository.save(profile);
 
-            // 2. Upsert SavedMajor for history (keeps a record even if they change later)
             if (!savedMajorRepository.existsByUserIdAndMajorId(userId, majorId)) {
                 savedMajorRepository.save(
                         SavedMajor.builder().user(profile).major(major).build()
@@ -121,7 +92,6 @@ public class SelectedMajorController {
         }
         // Guest
         else if (guestSessionId != null) {
-            // One selection per guest session,replace any existing
             guestMajorSelectionRepository.deleteByGuestSessionId(guestSessionId);
             guestMajorSelectionRepository.save(
                     GuestMajorSelection.builder()
@@ -134,7 +104,6 @@ public class SelectedMajorController {
                     .body(Map.of("error", "Provide either a valid JWT or X-Guest-Session-Id header"));
         }
 
-        // Return major + university list (same for both paths)
         List<Map<String, Object>> universities = buildUniversityList(majorId, null, null, null, null);
 
         return ResponseEntity.ok(Map.of(
@@ -145,14 +114,6 @@ public class SelectedMajorController {
     }
 
     // DELETE /api/v1/selected-major
-
-    /**
-     * Deselects the current major.
-     * For registered users: clears Profile.selectedMajor.
-     * For guests: removes the guest_major_selections row.
-     *
-     * Response 200: { "selected": false, "message": "Major deselected" }
-     */
     @DeleteMapping
     @Transactional
     public ResponseEntity<?> deselectMajor(
