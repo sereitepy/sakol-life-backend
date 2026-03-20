@@ -1,181 +1,90 @@
-# Sakol Life — Backend API
+# Sakol Life Backend
 
-Spring Boot REST API for the Sakol Life major recommendation platform.
-
-## Tech Stack
-- **Java 21** + **Spring Boot 3.2.5**
-- **Spring Data JPA** + **PostgreSQL** (Supabase)
-- **Spring Security** (Supabase JWT / HS256)
-- **Maven**
+Sakol Life platform: a study major guidance website that helps Cambodian students find the right university major based on a RIASEC personality quiz.
 
 ---
 
-## Project Structure
-```
-src/main/java/com/sakollife/
-├── config/                  # SecurityConfig (CORS + Supabase JWT filter)
-├── controller/              # Public + user-facing controllers
-│   ├── QuizController
-│   ├── MajorController
-│   ├── UniversityController
-│   ├── ProfileController
-│   └── SavedMajorController
-├── controller/admin/        # Admin-only controllers (ROLE_ADMIN)
-│   ├── AdminMajorController
-│   ├── AdminQuestionController
-│   ├── AdminUniversityController
-│   └── AdminUserController
-├── dto/request/             # Request bodies
-├── dto/response/            # Response bodies
-├── entity/                  # JPA entities
-│   └── enums/               # Language, Role, QuestionFormat, UniversityType
-├── exception/               # GlobalExceptionHandler
-├── repository/              # Spring Data JPA repositories
-├── service/impl/            # QuizService, VectorService
-└── util/                    # CosineSimilarityCalculator
-```
+## What it does
+
+- Runs the RIASEC quiz and calculates major compatibility scores using cosine similarity
+- Returns ranked major recommendations based on a student's quiz answers
+- Manages university and major data including tuition fees, scholarships, facilities, and admission requirements
+- Handles user profiles and saved majors for both logged-in users and guests
+- Validates Supabase JWTs for authentication
+- Stores uploaded images (university banners, facility photos) on DigitalOcean Spaces
 
 ---
 
-## Setup
+## Tech stack
 
-### 1. Configure credentials
-Open `src/main/resources/application.properties` and fill in:
+- Java 21
+- Spring Boot 3
+- PostgreSQL via Supabase
+- DigitalOcean Spaces for file storage
+- Deployed on DigitalOcean App Platform
 
-```properties
-spring.datasource.url=jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require
-spring.datasource.username=postgres.your-project-ref
-spring.datasource.password=your-db-password
-supabase.jwt.secret=your-jwt-secret
-cors.allowed-origins=http://localhost:3000
+---
+
+## Requirements
+
+- Java 21
+- Maven
+- A Supabase project with the database schema applied
+- A DigitalOcean Spaces bucket (or any S3-compatible storage)
+
+---
+
+## Environment variables
+
+Create an `application.properties` file locally or set these as environment variables on your host.
+
+```
+PORT=8080
+
+DATABASE_URL=jdbc:postgresql://your-supabase-host:5432/postgres
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=your-db-password
+
+SUPABASE_PROJECT_REF=your-supabase-project-ref
+
+CORS_ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+DO_SPACES_ENDPOINT=https://sgp1.digitaloceanspaces.com
+DO_SPACES_BUCKET=sakollife-media
+DO_SPACES_ACCESS_KEY=your-access-key
+DO_SPACES_SECRET_KEY=your-secret-key
+DO_SPACES_CDN_BASE_URL=https://sakollife-media.sgp1.cdn.digitaloceanspaces.com
 ```
 
-Where to find these in Supabase:
-- URL: Project Settings → Database → Connection String → JDBC tab (add jdbc: prefix)
-- Username: The full postgres.xxxx string shown in the JDBC URL
-- Password: Your project database password
-- JWT Secret: Project Settings → API → JWT Secret
+A few notes on these:
 
-### 2. Start the app
+`DATABASE_URL` should use the Supabase connection pooler URL on port 6543 in production, not the direct connection on port 5432. This avoids hitting the free tier connection limit.
+
+`SUPABASE_PROJECT_REF` is the short ID from your Supabase project URL, for example if your URL is `https://abcdefgh.supabase.co` then the ref is `abcdefgh`. This is used to validate JWT tokens issued by Supabase.
+
+`CORS_ALLOWED_ORIGINS` is a comma-separated list. Make sure your frontend domain is in here, otherwise browser requests will be blocked.
+
+---
+
+## Running locally
+
 ```bash
-mvn spring-boot:run
-```
-Hibernate will auto-create all tables on first run.
+git clone https://github.com/your-org/sakollife-backend.git
+cd sakollife-backend
 
-### 3. Seed the database
-Run both scripts in Supabase Dashboard → SQL Editor in this order:
-
-Step 1: src/main/resources/seed.sql — 9 majors + sample universities
-
-Step 2: src/main/resources/seed-questions.sql — all 20 quiz questions + answer options
-(The VectorService will throw an error if questions are not seeded)
-
-### 4. Create your first admin user
-After registering via Supabase Auth:
-
-Step 1 — Update profiles table:
-```sql
-UPDATE profiles SET role = 'ADMIN' WHERE id = 'your-user-uuid';
+# set your environment variables first, then:
+./mvnw spring-boot:run
 ```
 
-Step 2 — Set app_metadata in Supabase Dashboard → Authentication → Users → select user → edit App Metadata:
-```json
-{ "app_role": "ADMIN" }
-```
-This encodes the role in the JWT so Spring Security reads it without a DB call on every request.
+The API will be available at `http://localhost:8080`.
 
 ---
 
-## Complete API Reference
+## Deployment on DigitalOcean App Platform
 
-All endpoints prefixed with /api/v1.
+1. Push your code to GitHub.
+2. Create a new App on DigitalOcean and connect your repository.
+3. Add all the environment variables listed above in the App settings.
+4. Deploy.
 
-### Public (no auth required)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | /quiz/submit | Submit quiz. Body: flat map { "Q1": "A", "Q2": "3", ... } |
-| GET | /majors | List all majors |
-| GET | /majors/{id} | Get single major |
-| GET | /majors/results/{attemptId} | Ranked results for an attempt (>=50% only) |
-| GET | /universities?majorId= | Universities for a major. Optional filters: type, city, maxFee, durationYears |
-
-### Authenticated users (Supabase JWT required)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | /quiz/merge-guest-attempt | Save guest quiz as attempt #1 after registration |
-| GET | /quiz/history | Total attempt count |
-| GET | /profile | Profile + attempt count + latest quiz answers |
-| PUT | /profile | Update display name, picture, language |
-| POST | /saved-majors | Save a major. Body: { "majorId": "uuid" } |
-| DELETE | /saved-majors/{majorId} | Unsave a major |
-| GET | /saved-majors | List saved majors |
-
-### Admin only (ROLE_ADMIN)
-
-#### Majors — full CRUD, extensible beyond 9
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | /admin/majors | List all majors with RIASEC vectors |
-| GET | /admin/majors/{id} | Get single major |
-| POST | /admin/majors | Create a new major |
-| PUT | /admin/majors/{id} | Update name, description, or RIASEC vector |
-| DELETE | /admin/majors/{id} | Delete a major |
-
-#### Questions & Answer Options — fully data-driven
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | /admin/questions | All questions including inactive |
-| GET | /admin/questions/{id} | Single question with options |
-| POST | /admin/questions | Create question |
-| PUT | /admin/questions/{id} | Update text, weight, RIASEC flags, active status |
-| DELETE | /admin/questions/{id} | Soft-delete (active=false, preserves history) |
-| GET | /admin/questions/{id}/options | List answer options |
-| POST | /admin/questions/{id}/options | Add answer option |
-| PUT | /admin/questions/{qId}/options/{optId} | Update option text, scoreValue, RIASEC |
-| DELETE | /admin/questions/{qId}/options/{optId} | Delete option |
-
-#### Universities
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | /admin/universities | List all |
-| GET | /admin/universities/{id} | Get one |
-| POST | /admin/universities | Create |
-| PUT | /admin/universities/{id} | Update |
-| DELETE | /admin/universities/{id} | Delete |
-| GET | /admin/universities/{id}/majors | Majors offered by university |
-| POST | /admin/universities/{id}/majors | Link major to university (with tuition + duration) |
-| PUT | /admin/universities/{uId}/majors/{umId} | Update tuition or duration |
-| DELETE | /admin/universities/{uId}/majors/{umId} | Remove major from university |
-
-#### Users
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | /admin/users?page=0&size=20 | Paginated user list |
-| GET | /admin/users/{userId} | Get user profile |
-| GET | /admin/users/{userId}/quiz-history | All attempts + top matches |
-| PUT | /admin/users/{userId}/role | Change role. Body: { "role": "ADMIN" } |
-
----
-
-## How the Recommendation Engine Works
-
-1. User answers all 20 questions (14 shown, Q4 split into 7 sub-questions)
-2. VectorService loads question weights and RIASEC mappings from the database
-3. For each answer: contribution = score x weight x riasecFlag[dimension]
-4. The 6 accumulated values form the Student Vector [R, I, A, S, E, C]
-5. CosineSimilarityCalculator computes similarity against each major's vector
-6. Results ranked 1-N, filtered to >=50%, returned to frontend
-7. For authenticated users: attempt + vector + all 9 results are persisted
-
----
-
-## Deployment
-
-Render (dev/test):
-- Build: mvn clean package -DskipTests
-- Start: java -jar target/sakol-life-backend-0.0.1-SNAPSHOT.jar
-
-Digital Ocean (production):
-- Same commands. Change ddl-auto to validate in production.
+The app listens on whatever port is set in the `PORT` environment variable. DigitalOcean sets this automatically, so you do not need to hardcode it.
