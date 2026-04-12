@@ -60,6 +60,18 @@ public class Question {
     @Column(name = "likert_e", precision = 3, scale = 1) @Builder.Default private BigDecimal likertE = BigDecimal.ZERO;
     @Column(name = "likert_c", precision = 3, scale = 1) @Builder.Default private BigDecimal likertC = BigDecimal.ZERO;
 
+    @Column(name = "likert_label_low_en")
+    private String likertLabelLowEn;
+
+    @Column(name = "likert_label_high_en")
+    private String likertLabelHighEn;
+
+    @Column(name = "likert_label_low_kh")
+    private String likertLabelLowKh;
+
+    @Column(name = "likert_label_high_kh")
+    private String likertLabelHighKh;
+
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("optionLetter ASC")
     @Builder.Default

@@ -37,6 +37,10 @@ public class QuizController {
                     map.put("questionCode", q.getQuestionCode());
                     map.put("textEn", q.getTextEn());
                     map.put("textKh", q.getTextKh());
+                    map.put("likertLabelLowEn", q.getLikertLabelLowEn());
+                    map.put("likertLabelHighEn", q.getLikertLabelHighEn());
+                    map.put("likertLabelLowKh", q.getLikertLabelLowKh());
+                    map.put("likertLabelHighKh", q.getLikertLabelHighKh());
                     map.put("format", q.getFormat());
                     map.put("displayOrder", q.getDisplayOrder());
                     map.put("options", q.getOptions().stream().map(o -> {
