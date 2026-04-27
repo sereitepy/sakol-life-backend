@@ -3,13 +3,18 @@ package com.sakollife.controller;
 import com.sakollife.entity.Major;
 import com.sakollife.entity.Profile;
 import com.sakollife.entity.QuizAttempt;
+import com.sakollife.entity.enums.Language;
+import com.sakollife.entity.enums.Role;
 import com.sakollife.repository.ProfileRepository;
 import com.sakollife.repository.QuizAnswerRepository;
 import com.sakollife.repository.QuizAttemptRepository;
 import com.sakollife.service.impl.QuizService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -28,14 +33,17 @@ public class ProfileController {
      * POST /api/v1/profile/init
      */
     @PostMapping("/init")
+    @Transactional
     public ResponseEntity<?> initProfile(
             @RequestBody Map<String, String> body,
             Authentication authentication) {
 
         UUID userId = (UUID) authentication.getPrincipal();
 
-        if (profileRepository.existsById(userId)) {
-            return ResponseEntity.ok(profileRepository.findById(userId).get());
+        // Fast path, already exists
+        Optional<Profile> existing = profileRepository.findById(userId);
+        if (existing.isPresent()) {
+            return ResponseEntity.ok(existing.get());
         }
 
         Profile profile = Profile.builder()
@@ -43,18 +51,25 @@ public class ProfileController {
                 .displayName(body.getOrDefault("displayName", "New User"))
                 .preferredLanguage(
                         body.containsKey("preferredLanguage")
-                                ? com.sakollife.entity.enums.Language.valueOf(body.get("preferredLanguage"))
-                                : com.sakollife.entity.enums.Language.EN
+                                ? Language.valueOf(body.get("preferredLanguage"))
+                                : Language.EN
                 )
-                .role(com.sakollife.entity.enums.Role.USER)
+                .role(Role.USER)
                 .build();
 
-        profileRepository.save(profile);
-        return ResponseEntity.status(201).body(Map.of(
-                "message",     "Profile created successfully",
-                "id",          userId,
-                "displayName", profile.getDisplayName()
-        ));
+        try {
+            profileRepository.saveAndFlush(profile); // flush forces immediate DB write inside the transaction
+            return ResponseEntity.status(201).body(Map.of(
+                    "message",     "Profile created successfully",
+                    "id",          userId,
+                    "displayName", profile.getDisplayName()
+            ));
+        } catch (DataIntegrityViolationException e) {
+            // A concurrent request created the profile between our check and insert.
+            Profile created = profileRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalStateException("Profile vanished after conflict"));
+            return ResponseEntity.ok(created);
+        }
     }
 
     /**
@@ -64,8 +79,11 @@ public class ProfileController {
     public ResponseEntity<?> getProfile(Authentication authentication) {
         UUID userId = (UUID) authentication.getPrincipal();
 
-        Profile profile = profileRepository.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("Profile not found"));
+        Optional<Profile> profileOpt = profileRepository.findById(userId);
+        if (profileOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "Profile not found"));
+        }
+        Profile profile = profileOpt.get();
 
         long attemptCount = quizService.getAttemptCount(userId);
 
@@ -108,8 +126,11 @@ public class ProfileController {
             Authentication authentication) {
 
         UUID userId = (UUID) authentication.getPrincipal();
-        Profile profile = profileRepository.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("Profile not found"));
+        Optional<Profile> profileOpt = profileRepository.findById(userId);
+        if (profileOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "Profile not found"));
+        }
+        Profile profile = profileOpt.get();
 
         if (updates.containsKey("displayName")) {
             profile.setDisplayName(updates.get("displayName"));
