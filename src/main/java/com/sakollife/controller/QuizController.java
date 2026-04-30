@@ -1,7 +1,10 @@
 package com.sakollife.controller;
 
 import com.sakollife.dto.response.QuizSubmitResponse;
+import com.sakollife.entity.QuizAnswer;
+import com.sakollife.entity.QuizAttempt;
 import com.sakollife.repository.QuestionRepository;
+import com.sakollife.repository.QuizAnswerRepository;
 import com.sakollife.repository.QuizAttemptRepository;
 import com.sakollife.service.impl.QuizService;
 import jakarta.validation.Valid;
@@ -10,10 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/v1/quiz")
@@ -22,6 +22,7 @@ public class QuizController {
 
     private final QuizService quizService;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final QuizAnswerRepository quizAnswerRepository;
     private final QuestionRepository questionRepository;
 
     /**
@@ -99,5 +100,43 @@ public class QuizController {
             return (UUID) authentication.getPrincipal();
         }
         return null;
+    }
+
+    /**
+     * GET /api/v1/quiz/latest-results
+     * Re-computes and returns ranked major results for the user's most recent attempt.
+     * Used to restore the results page when sessionStorage has been cleared.
+     */
+    @GetMapping("/latest-results")
+    public ResponseEntity<?> getLatestResults(Authentication authentication) {
+        UUID userId = extractUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
+        }
+
+        Optional<QuizAttempt> latestAttempt = quizAttemptRepository.findLatestByUserId(userId);
+        if (latestAttempt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "No quiz attempt found"));
+        }
+
+        QuizAttempt attempt = latestAttempt.get();
+
+        // Re-hydrate answers from saved quiz_answers rows
+        List<QuizAnswer> savedAnswers = quizAnswerRepository
+                .findByAttemptIdOrderByQuestionCodeAsc(attempt.getId());
+
+        Map<String, String> answers = savedAnswers.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        QuizAnswer::getQuestionCode,
+                        QuizAnswer::getAnswerValue
+                ));
+
+        if (answers.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "No answers found for latest attempt"));
+        }
+
+        // Re-run the same scoring logic — no DB writes this time
+        QuizSubmitResponse response = quizService.recomputeResults(answers, attempt);
+        return ResponseEntity.ok(response);
     }
 }
