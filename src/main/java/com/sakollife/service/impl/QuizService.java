@@ -133,6 +133,48 @@ public class QuizService {
         };
     }
 
+    /**
+     * Re-computes ranked results for an existing attempt without writing to DB.
+     * Used by GET /api/v1/quiz/latest-results.
+     */
+    public QuizSubmitResponse recomputeResults(Map<String, String> answers, QuizAttempt attempt) {
+        double[] studentVector = vectorService.calculate(answers);
+
+        List<Major> allMajors = majorRepository.findAll();
+        List<MajorScore> scores = allMajors.stream()
+                .map(major -> {
+                    double[] majorVector = extractMajorVector(major);
+                    double similarity = cosineSimilarityCalculator.calculate(studentVector, majorVector);
+                    return new MajorScore(major, similarity);
+                })
+                .sorted(Comparator.comparingDouble(MajorScore::score).reversed())
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < scores.size(); i++) scores.get(i).rank = i + 1;
+
+        List<MajorResultResponse> filteredResults = scores.stream()
+                .filter(ms -> ms.score >= 0.5)
+                .map(ms -> MajorResultResponse.builder()
+                        .majorId(ms.major.getId())
+                        .code(ms.major.getCode())
+                        .nameEn(ms.major.getNameEn())
+                        .nameKh(ms.major.getNameKh())
+                        .descriptionEn(ms.major.getDescriptionEn())
+                        .descriptionKh(ms.major.getDescriptionKh())
+                        .rank(ms.rank)
+                        .similarityScore(ms.score)
+                        .similarityPercentage((int) Math.round(ms.score * 100))
+                        .build())
+                .collect(Collectors.toList());
+
+        return QuizSubmitResponse.builder()
+                .attemptId(attempt.getId())
+                .attemptNumber(attempt.getAttemptNumber())
+                .studentVector(studentVector)
+                .results(filteredResults)
+                .build();
+    }
+
     private void saveAnswers(QuizAttempt attempt, Map<String, String> answers) {
         List<QuizAnswer> answerEntities = answers.entrySet().stream()
                 .map(e -> QuizAnswer.builder()
